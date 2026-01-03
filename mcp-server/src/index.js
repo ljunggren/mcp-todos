@@ -30,6 +30,18 @@ const server = new Server(
     }
 );
 
+function sanitizeCategory(category) {
+    if (!category || typeof category !== "string") {
+        throw new Error("Category must be a string");
+    }
+    // Only allow alphanumeric, hyphens, and underscores to prevent path traversal
+    if (!/^[a-z0-9-_]+$/i.test(category)) {
+        throw new Error(`Invalid category name: ${category}`);
+    }
+    return category;
+}
+
+
 // --- Resources ---
 
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
@@ -47,7 +59,7 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     const url = new URL(request.params.uri);
-    const category = url.host;
+    const category = sanitizeCategory(url.host);
     const filePath = path.join(TODOS_DIR, `${category}.md`);
 
     try {
@@ -114,22 +126,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     if (request.params.name === "add_todo") {
-        const { category, text } = AddTodoSchema.parse(request.params.arguments);
+        const { category: rawCategory, text } = AddTodoSchema.parse(request.params.arguments);
+        const category = sanitizeCategory(rawCategory);
         const filePath = path.join(TODOS_DIR, `${category}.md`);
 
         try {
             let content = await fs.readFile(filePath, "utf-8");
-            content = content.trim() + `\n- [ ] ${text}\n`;
+
+            // Ensure content ends with exactly one newline before appending
+            content = content.trimEnd();
+
+            // If it's an empty file or just title, prepare for list
+            if (content.length === 0) {
+                content = `# ${category.charAt(0).toUpperCase() + category.slice(1)} To-Do\n`;
+            }
+
+            content += `\n- [ ] ${text}\n`;
             await fs.writeFile(filePath, content);
             return {
                 content: [{ type: "text", text: `Added task to ${category}` }],
             };
         } catch (error) {
-            const newContent = `# ${category.charAt(0).toUpperCase() + category.slice(1)} To-Do\n\n- [ ] ${text}\n`;
-            await fs.writeFile(filePath, newContent);
-            return {
-                content: [{ type: "text", text: `Created new category ${category} and added task` }],
-            };
+            // Handle file not found by creating a new one
+            if (error.code === 'ENOENT') {
+                const newContent = `# ${category.charAt(0).toUpperCase() + category.slice(1)} To-Do\n\n- [ ] ${text}\n`;
+                await fs.writeFile(filePath, newContent);
+                return {
+                    content: [{ type: "text", text: `Created new category ${category} and added task` }],
+                };
+            }
+            throw error;
         }
     }
 
