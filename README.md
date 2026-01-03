@@ -1,5 +1,3 @@
-![MCP Todos Hero](brain/assets/hero.png)
-
 # Productivity Workspace
 
 A centralized, category-based personal productivity system designed for AI integration and cross-device sync.
