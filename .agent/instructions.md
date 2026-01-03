@@ -12,6 +12,7 @@
 - Deployment: Always provide a Dockerfile for production-ready components.
 - Documentation: Always include a README.md in new service directories with cURL/Fetch usage examples and a "How it Works" section.
 - Documentation: Always add a main README file in the project root for GitHub. It should include the overview (the Why, What, and How), directory structure and any usage scripts in the root, and license (by default MIT)
+- Documentation: Use Mermaid for sequence diagrams, call flows, and UML diagrams in READMEs where applicable to explain complex logic or infrastructure.
 - Troubleshooting: Prefer creating standalone verification scripts (unit tests) for protocol troubleshooting.
 - Troubleshooting: Be proactive. When building a new service, create `start/stop/status` scripts and a `test-connectivity` script *immediately*, before testing starts.
 - Troubleshooting: When using stream-based protocols (like SSE), be wary of global middleware (like `express.json()`) that might consume the request body stream.
